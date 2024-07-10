@@ -6,10 +6,18 @@ from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
-from api.models import db
-from api.routes import api
+from api.models import db, User
+from api.routes import api 
 from api.admin import setup_admin
 from api.commands import setup_commands
+
+
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
+
+app = Flask(__name__)
 
 # from models import Person
 
@@ -67,6 +75,32 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0  # avoid cache memory
     return response
 
+
+@app.route('/user', methods=['GET'])
+def handle_login():
+
+    users = User.query.all()
+    users_serialized = list(map(lambda item:item.serialize(), users))
+
+    response_body = {
+        "msg": "OK",
+        "data": users_serialized
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/user', methods=['POST'])
+def create_user():
+    
+    body = request.json
+    me = Personajes(email=body["email"], password=body["password"], is_activer=body["is_active"])
+    db.session.add(me)
+    db.session.commit()
+
+    response_body = {
+        "msg": "OK",
+    }
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
